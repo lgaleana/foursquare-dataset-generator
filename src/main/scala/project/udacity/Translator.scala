@@ -50,6 +50,8 @@ object Translator {
     val writer = new BufferedWriter(new FileWriter(lastFile))
     writer.write((venueIndex._2 + 1).toString)
     writer.close
+    
+    Thread.sleep(500)
   }
   
   def writeTranslatedText(venue: TranslatedVenue) = {
