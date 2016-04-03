@@ -8,3 +8,7 @@
 .classpath
 .settings
 .project
+/data/
+/translated_data/
+last_translated.txt
+venueIds.txt

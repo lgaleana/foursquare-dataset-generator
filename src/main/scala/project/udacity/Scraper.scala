@@ -31,27 +31,77 @@ object Scraper {
   )
   
   val venueIdsFile = "venueIds.txt"
+  val dataFolder = "data/"
+  
+  case class Venue(name: String, id: String)
+  case class Tip(date: String, text: String)
+  case class Photo(prefix: String, suffix: String)
   
   def main(args: Array[String]): Unit = {
-    val venueNameId = categoryIds.flatMap(getVenueIds).toSet
+    val venues = categoryIds.flatMap(getVenues).toSet
     val writer = new BufferedWriter(new FileWriter(venueIdsFile))
-    venueNameId.foreach(nameId => {
-      writer.write(nameId.mkString(",") + "\n")
-    })
+    venues.foreach(venue => writer.write(venue.name + "," + venue.id + "\n"))
     writer.close
-    println("Total no. venues: " + venueNameId.size)
+    
+    println()
+    venues.foreach(writeVenueInfo)
   }
   
-  def getVenueIds(category: String) = {
+  def getVenues(category: String) = {
     val url = s"https://api.foursquare.com/v2/venues/search?v=20160402&intent=browse&limit=50&sw=20.591652120829167%2C-103.4446907043457&ne=20.753866576560597%2C-103.23698043823242&categoryId=$category&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET"
+    println(s"Scraping $url")
     val jsonResponse = parse(scala.io.Source.fromURL(url).mkString)
+    
     val venueNamesObj = jsonResponse \ "response" \ "venues" \ "name"
     val venueIdsObj = jsonResponse \ "response" \ "venues" \ "id"
-    val venueNameId = (venueNamesObj.children zip venueIdsObj.children).map {
-      case (JField(_, JString(name)), JField(_, JString(id))) => Seq(name, id)
-      case _ => Seq()
+    (venueNamesObj.children zip venueIdsObj.children).map {
+      case (JField(_, JString(name)), JField(_, JString(id))) => Venue(name, id)
+      case _ => Venue("", "")
     }
-    println("No. venues: " +venueNameId.size)
-    venueNameId
+  }
+  
+  def getTips(venueId: String, offset: Int): List[Tip] = {
+    val url = s"https://api.foursquare.com/v2/venues/$venueId/tips?v=20160402&sort=recent&offset=$offset&limit=100&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET"
+    println(s"Scraping $url")
+    val jsonResponse = parse(scala.io.Source.fromURL(url).mkString)
+    
+    val tipDatesObj = jsonResponse \\ "createdAt"
+    val tipTextsObj = jsonResponse \\ "text"
+    val tips = (tipDatesObj.children zip tipTextsObj.children).map {
+      case (JField(_, JInt(date)), JField(_, JString(text))) => Tip(date.toString, text.replace("|", ""))
+      case _ => Tip("", "")
+    }
+    
+    if(tips.size > 0)
+      tips ++: getTips(venueId, offset + 100)
+    else
+      List()
+  }
+  
+  def getPhoto(venueId: String) = {
+    implicit val formats = DefaultFormats
+    
+    val url = s"https://api.foursquare.com/v2/venues/$venueId/photos?v=20160402&limit=1&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET"
+    println(s"Scraping $url")
+    val jsonResponse = parse(scala.io.Source.fromURL(url).mkString)
+    
+    val photoPrefix = (jsonResponse \ "response" \ "photos" \ "items" \ "prefix").extractOrElse[String]("")
+    val photoSuffix = (jsonResponse \ "response" \ "photos" \ "items" \ "suffix").extractOrElse[String]("")
+    
+    Photo(photoPrefix, photoSuffix)
+  }
+  
+  def writeVenueInfo(venue: Venue) = {
+    val writer = new BufferedWriter(new FileWriter(dataFolder + venue.name.replace("/", "").replace(" ", "_") + ".txt"))
+    
+    writer.write(venue.name + "," + venue.id + "\n")
+    
+    val photo = getPhoto(venue.id)
+    writer.write(photo.prefix + "," + photo.suffix + "\n")
+    
+    val tips = getTips(venue.id, 0)
+    tips.foreach(tip => writer.write(tip.date + "|" + tip.text + "\n"))
+    
+    writer.close
   }
 }
