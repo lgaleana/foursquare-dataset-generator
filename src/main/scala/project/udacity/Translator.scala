@@ -24,9 +24,7 @@ object Translator {
     val last = Source.fromFile(lastFile).getLines.toSeq.head.toInt
     
     val files = new File(dataFolder).listFiles.zipWithIndex
-    val translatedTips = files.drop(last).map(translateTips)
-    
-    translatedTips.foreach(writeTranslatedText)
+    files.drop(last).foreach(translateTips)
   }
   
   def translateTips(venueIndex: (File, Int)) = {
@@ -34,7 +32,7 @@ object Translator {
     
     val lines = Source.fromFile(venueIndex._1).getLines.toSeq
     
-    val text = URLEncoder.encode(lines.drop(2).foldLeft("")((text, line) => {
+    val text = lines.drop(2).foldLeft("")((translatedText, line) => {
       val tip = line.split('|')
       val text = URLEncoder.encode(tip(1), "UTF-8")
       
@@ -42,22 +40,21 @@ object Translator {
       println(s"Requesting $url")
       val jsonResponse = parse(scala.io.Source.fromURL(url).mkString)
       
-      tip(0) + "," + (jsonResponse \\ "translatedText").extract[String] + "\n"
-    }), "UTF-8")
+      translatedText + tip(0) + "|" + (jsonResponse \\ "translatedText").extract[String] + "\n"
+    })
+    
+    val venue = if(!text.isEmpty) TranslatedVenue(lines(0), lines(1), text) else TranslatedVenue(lines(0), lines(1), "")
+    
+    writeTranslatedText(venue)
     
     val writer = new BufferedWriter(new FileWriter(lastFile))
     writer.write((venueIndex._2 + 1).toString)
     writer.close
-    
-    if(!text.isEmpty)
-      TranslatedVenue(lines(0), lines(1), text)
-    else
-      TranslatedVenue(lines(0), lines(1), "")
   }
   
   def writeTranslatedText(venue: TranslatedVenue) = {
-    val name = venue.nameId.split(',')(1)
-    val writer = new BufferedWriter(new FileWriter(translatedDataFolder + name.replace("/", "").replace(" ", "_")))
+    val name = venue.nameId.split(',')(0).replace("/", "").replace(" ", "_")
+    val writer = new BufferedWriter(new FileWriter(translatedDataFolder + name + ".txt"))
     writer.write(venue.nameId + "\n")
     writer.write(venue.picture + "\n")
     writer.write(venue.text + "\n")
