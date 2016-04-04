@@ -15,3 +15,5 @@ venueIds.txt
 /analysed_data/
 last_analysed.txt
 /filtered_data/
+/partitioned_data/
+attributes.txt
