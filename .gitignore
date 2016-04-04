@@ -12,3 +12,6 @@
 /translated_data/
 last_translated.txt
 venueIds.txt
+/analysed_data/
+last_analysed.txt
+/filtered_data/
