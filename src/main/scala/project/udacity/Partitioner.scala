@@ -22,13 +22,17 @@ object Partitioner {
   case class PartitionedMaps(existent: Map[String, Int], nonExistent: Map[String, Int])
   
   def main(args: Array[String]): Unit = {
-    val partitionedAttributes = new File(analysedDataFolder).listFiles.map(filterAttributes).toSeq
+    val partitionedAttributes = new File(analysedDataFolder).listFiles.map(partitionAttributes).toSeq
     val partitionedMaps = mergePartitions(partitionedAttributes)
-    val existentAttributes = partitionedMaps.existent.toSeq.filter(_._2 > 0).sortBy(- _._2)
-    val nonExistentAttributes = partitionedMaps.nonExistent.toSeq.filter(_._2 >= 10).sortBy(- _._2)
+    val existentAttributes = partitionedMaps.existent.toSeq.filter(attribute => {
+      attribute._1.length() > 1 && attribute._2 >= 10
+    }).sortBy(- _._2)
+    val nonExistentAttributes = partitionedMaps.nonExistent.toSeq.filter(attribute => {
+      attribute._1.length() > 1 && attribute._2 >= 10
+    }).sortBy(- _._2)
     
     val existentWriter = new BufferedWriter(new FileWriter(filteredDataFolder + existentFile))
-    existentAttributes.foreach(attribute => existentWriter.write(attribute._1 + "\n"))
+    existentAttributes.foreach(attribute => existentWriter.write(attribute._1 + "," + attribute._2 + "\n"))
     existentWriter.close
     
     val nonExistentWriter = new BufferedWriter(new FileWriter(filteredDataFolder + nonExistentFile))
@@ -36,7 +40,7 @@ object Partitioner {
     nonExistentWriter.close
   }
   
-  def filterAttributes(venueFile: File) = {
+  def partitionAttributes(venueFile: File) = {
     val lines = Source.fromFile(venueFile).getLines.drop(2)
     val attributes = lines.map(line => {
       val attributeInfo = line.split(',')
