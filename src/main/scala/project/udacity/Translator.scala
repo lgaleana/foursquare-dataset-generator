@@ -12,7 +12,7 @@ import java.io.BufferedWriter
  */
 object Translator {
   
-  val SERVER_KEY = "AIzaSyCcB0p6FYwqgm61dzJktdQSD-FbfeLv_NY"
+  val SERVER_KEY = "SERVER_KEY"
   
   val dataFolder = "data/"
   val translatedDataFolder = "translated_data/"

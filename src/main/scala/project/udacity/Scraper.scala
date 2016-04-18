@@ -5,8 +5,8 @@ import java.io.BufferedWriter
 import java.io.FileWriter
 
 object Scraper {
-  val CLIENT_ID = "QHOC11AI2RYV2J2XHA3CF4C31RULJS4HNQ0JZHL2XI3OKUN3"
-  val CLIENT_SECRET = "SSIEUDJYYZVU2PMPSVX1SRP312TKRC2TGDGEFA5FC0KHIF4D"
+  val CLIENT_ID = "CLIENT_ID"
+  val CLIENT_SECRET = "CLIENT_SECRET"
   
   val categoryIds = Seq(
       "52e81612bcbc57f1066b7a0d",
